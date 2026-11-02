@@ -112,7 +112,8 @@ api.get('/inbound-log', async (req, res) => {
 
 api.get('/receipts', async (req, res) => {
   const from = isDate(req.query.from) ? req.query.from : '1900-01-01'; const to = isDate(req.query.to) ? req.query.to : '2999-12-31';
-  const rows = await db.q(`SELECT * FROM receipts WHERE user_id=$1 AND ((receipt_date BETWEEN $2 AND $3) OR receipt_date IS NULL)
+  const rows = await db.q(`SELECT * FROM receipts WHERE user_id=$1 AND ((receipt_date BETWEEN $2 AND $3) OR receipt_date IS NULL
+      OR status IN ('queued','reading','read','error'))
     ORDER BY receipt_date DESC NULLS FIRST, created_at DESC`, [req.user.id, from, to]);
   res.json(rows.map(pub));
 });

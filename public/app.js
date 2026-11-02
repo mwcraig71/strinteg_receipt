@@ -98,6 +98,7 @@ function visible() {
   const f = S.filter;
   return S.receipts.filter((r) => !f || (f === 'todo' ? !['checked', 'submitted'].includes(r.status) : r.status === f));
 }
+const outside = (r) => !!r.date && (r.date < $('#from').value || r.date > $('#to').value);
 function renderQueue() {
   const list = visible();
   $('#qCount').textContent = S.receipts.length ? `(${S.receipts.length})` : '';
@@ -109,6 +110,7 @@ function renderQueue() {
       ${r.mime.startsWith('text/') ? '<div class="th txt">EMAIL</div>' : `<img class="th" data-thumb="${r.id}" alt="">`}
       <div style="min-width:0"><div class="nm" title="${esc(r.name)}">${esc(r.vendor || r.result?.merchant || r.name)}</div>
       <div class="meta"><span class="chip ${cls}">${txt}</span>${r.total != null ? `<span class="num">${money(r.total)}</span>` : ''}${r.date ? `<span>${esc(fmtDate(r.date))}</span>` : ''}${r.source === 'email' ? '<span>· emailed</span>' : ''}</div>
+      ${outside(r) ? '<div class="meta"><span class="outside">Outside the dates above</span></div>' : ''}
       ${r.status !== 'submitted' ? `<div class="meta">${canJoin ? `<button class="btn ghost sm" data-join="${r.id}" data-into="${prev.id}" type="button" title="Combine with the receipt above (multi-page folio)">Join above</button>` : ''}<button class="btn ghost sm" data-del="${r.id}" type="button">Delete</button></div>` : ''}</div></li>`;
   }).join('') || `<li class="empty">${S.receipts.length ? 'Nothing matches this filter.' : 'No receipts dated in this range yet. Add some above, or email them in.'}</li>`;
   renderBulk();
@@ -298,6 +300,7 @@ async function action(act, r, btnEl) {
     } else if (act === 'check' || act === 'reopen') {
       await flush(r);
       Object.assign(r, await (await call(`/receipts/${r.id}`, { method: 'PATCH', json: { status: act === 'check' ? 'checked' : 'read' } })).json());
+      if (act === 'check' && outside(r)) toast(`Checked. It's dated ${fmtDate(r.date)}, so it moves to that period. Change the dates above to see it.`, 7000);
       if (act === 'check') { const next = visible().find((x) => x.id !== r.id && x.status === 'read'); if (next) select(next.id); else { renderQueue(); renderResult(); } }
       else { renderQueue(); renderResult(); }
       loadPeriod();
