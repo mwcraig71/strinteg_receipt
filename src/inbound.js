@@ -31,11 +31,15 @@ async function findUser(msg) {
 }
 
 async function handle(req, res) {
-  if (!authorized(req)) return res.status(401).send('unauthorized');
+  if (!authorized(req)) { console.warn('inbound rejected: webhook password missing or wrong' + (config.inboundWebhookPassword ? '' : ' (INBOUND_WEBHOOK_PASSWORD not set)')); return res.status(401).send('unauthorized'); }
   const msg = req.body || {};
   const sender = msg.FromFull?.Email || msg.From || '';
   const subject = msg.Subject || '';
-  const log = (user, outcome, ids = []) => db.q('INSERT INTO inbound_log (user_id, sender, subject, outcome, receipt_ids) VALUES ($1,$2,$3,$4,$5)', [user?.id || null, sender, subject, outcome, JSON.stringify(ids)]);
+  const log = (user, outcome, ids = []) => {
+    const to = (msg.ToFull || []).map((t) => t.Email).join(',') || msg.To || '';
+    console.log(`inbound from=${sender} to=${to} user=${user?.email || 'none'} attachments=${(msg.Attachments || []).length} outcome="${outcome}"`);
+    return db.q('INSERT INTO inbound_log (user_id, sender, subject, outcome, receipt_ids) VALUES ($1,$2,$3,$4,$5)', [user?.id || null, sender, subject, outcome, JSON.stringify(ids)]);
+  };
   try {
     const user = await findUser(msg);
     if (!user) { await log(null, 'Sender not recognized'); return res.json({ ok: true }); }
