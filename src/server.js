@@ -101,6 +101,11 @@ api.patch('/me/settings', async (req, res) => {
   await db.q('UPDATE users SET settings=$2 WHERE id=$1', [req.user.id, JSON.stringify(s)]);
   res.json({ settings: s });
 });
+// Connection check: open /api/diag in the browser while signed in.
+api.get('/diag', async (req, res) => {
+  res.json({ reader: config.reader, apiKeySet: !!config.anthropicApiKey, models: { standard: config.modelStandard, careful: config.modelCareful, quick: config.modelQuick },
+    inboundAddressSet: !!config.inboundAddress, claude: await reader.diag() });
+});
 api.get('/inbound-log', async (req, res) => {
   res.json(await db.q('SELECT sender, subject, outcome, created_at FROM inbound_log WHERE user_id=$1 ORDER BY created_at DESC LIMIT 15', [req.user.id]));
 });
@@ -253,7 +258,7 @@ app.use((err, req, res, next) => {
 async function main() {
   await db.connect();
   await queue.start();
-  app.listen(config.port, () => console.log(`Receipt Sorter on :${config.port} (reader: ${config.reader}${devUser ? ', dev sign-in' : ''})`));
+  app.listen(config.port, () => console.log(`Receipt Sorter on :${config.port} (reader: ${config.reader}, models: ${config.modelStandard} / ${config.modelCareful}${devUser ? ', dev sign-in' : ''})`));
 }
 if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });
 module.exports = { app, main };

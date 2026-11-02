@@ -85,6 +85,35 @@ function contextText(rec, plan, prior, emailText) {
   return t;
 }
 
+/* Send a request; if this model refuses a forced tool choice, ask again letting it choose the tool itself. */
+async function create(params) {
+  try { return await api().messages.create(params); } catch (e) {
+    if (e?.status === 400 && /tool_choice|thinking/i.test(e.message || '')) {
+      const p = { ...params, tool_choice: { type: 'auto' } };
+      p.messages = params.messages.map((m) => ({ ...m }));
+      return api().messages.create(p);
+    }
+    throw e;
+  }
+}
+function toolInput(res, name) {
+  const block = res.content.find((c) => c.type === 'tool_use' && (!name || c.name === name));
+  if (block) return block.input;
+  const text = res.content.filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch (e) { /* fall through */ } }
+  const err = new Error(`Claude answered without a structured result (stop_reason: ${res.stop_reason})`); err.status = 'no_tool'; throw err;
+}
+
+/** Tiny request to confirm the key and model work. */
+async function diag() {
+  if (config.reader === 'mock') return { ok: false, error: 'No ANTHROPIC_API_KEY is set, so reads use a canned example.' };
+  try {
+    const res = await api().messages.create({ model: config.modelStandard, max_tokens: 10, messages: [{ role: 'user', content: 'Reply with the word OK.' }] });
+    return { ok: true, model: res.model, reply: res.content.map((c) => c.text || '').join('').trim() };
+  } catch (e) { return { ok: false, status: e.status || null, error: (e.error?.error?.message || e.message || String(e)).slice(0, 400) }; }
+}
+
 async function read({ rec, images, plan, emailText, careful }) {
   const model = careful ? config.modelCareful : config.modelStandard;
   const prior = careful && rec.result ? { result: rec.result, issues: lists.checks(rec).filter((c) => c[0] !== 'info').map((c) => c[1]) } : null;
@@ -92,15 +121,13 @@ async function read({ rec, images, plan, emailText, careful }) {
   const content = [];
   for (const b of images || []) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } });
   content.push({ type: 'text', text: contextText(rec, plan || { single: true, tiles: [] }, prior, emailText) });
-  const res = await api().messages.create({
+  const res = await create({
     model, max_tokens: 8000,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name },
     messages: [{ role: 'user', content }],
   });
-  const block = res.content.find((c) => c.type === 'tool_use');
-  if (!block) throw new Error('Claude returned no structured result');
-  return { raw: block.input, model, usage: res.usage, cost: costOf(model, res.usage) };
+  return { raw: toolInput(res, TOOL.name), model, usage: res.usage, cost: costOf(model, res.usage) };
 }
 
 /** Text-only re-sort of expense types after the purpose changes (fast, cheap model). */
@@ -109,15 +136,14 @@ async function resort(rec) {
   const lines = rec.result.lines.map((l, i) => `${i}. ${l.description} | ${l.kind} | ${l.amount}`).join('\n');
   if (config.reader === 'mock') return { cats: rec.result.lines.map((l) => ({ category: l.category, confidence: l.confidence, reason: l.reason })), cost: 0, model: 'mock' };
   const model = config.modelQuick;
-  const res = await api().messages.create({
+  const res = await create({
     model, max_tokens: 3000,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     tools: [{ name: 'record_categories', description: 'One entry per line, same order.', input_schema: { type: 'object', properties: { lines: { type: 'array', items: { type: 'object', properties: { category: { type: 'string' }, confidence: { type: 'number' }, reason: { type: 'string' } }, required: ['category', 'confidence'] } } }, required: ['lines'] } }],
     tool_choice: { type: 'tool', name: 'record_categories' },
     messages: [{ role: 'user', content: `Re-assign the expense type of each line of this already-transcribed receipt.\nPurpose: ${p[1]}. ${p[2]}\nProject number: ${rec.project || '(none)'}\nMerchant: ${rec.result.merchant} (${rec.result.receipt_type})\n\nLines:\n${lines}` }],
   });
-  const block = res.content.find((c) => c.type === 'tool_use');
-  return { cats: block?.input?.lines || [], cost: costOf(model, res.usage), model };
+  return { cats: toolInput(res, 'record_categories')?.lines || [], cost: costOf(model, res.usage), model };
 }
 
 function mockRead(rec, model) {
@@ -131,4 +157,4 @@ function mockRead(rec, model) {
   return { raw, model: 'mock', usage: { input_tokens: 0, output_tokens: 0 }, cost: 0 };
 }
 
-module.exports = { read, resort, costOf, SYSTEM };
+module.exports = { read, resort, diag, costOf, SYSTEM };

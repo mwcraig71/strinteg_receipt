@@ -34,12 +34,17 @@ async function processOne(rec) {
 }
 
 function friendly(e) {
-  const s = e?.status;
-  if (s === 401 || s === 403) return 'The server\'s Claude API key was rejected. Tell the administrator.';
-  if (s === 429 || s === 529 || s === 503) return 'Claude was busy. It will try again shortly.';
-  if (s === 400 && /image/i.test(e.message || '')) return 'Claude couldn\'t accept this image. Crop it or re-scan it, then read again.';
-  if (/pdftoppm|Input buffer|unsupported image/i.test(e?.message || '')) return 'This file couldn\'t be opened as an image. Re-scan it as PDF or JPEG.';
-  return 'The read failed. Click Read again.';
+  const s = e?.status; const msg = e?.error?.error?.message || e?.message || String(e);
+  let text;
+  if (s === 401 || s === 403) text = 'The server\'s Claude API key was rejected. Check ANTHROPIC_API_KEY on Render.';
+  else if (s === 404 && /model/i.test(msg)) text = `This API key can't use the model "${config.modelStandard}". Check MODEL_STANDARD on Render.`;
+  else if (s === 400 && /credit|billing|balance/i.test(msg)) text = 'The Claude API account is out of credit. Add credit in the Claude Console.';
+  else if (s === 429 || s === 529 || s === 503) text = 'Claude was busy. It will try again shortly.';
+  else if (s === 400 && /image/i.test(msg)) text = 'Claude couldn\'t accept this image. Crop it or re-scan it, then read again.';
+  else if (/pdftoppm|Input buffer|unsupported image/i.test(msg)) text = 'This file couldn\'t be opened as an image. Re-scan it as PDF or JPEG.';
+  else if (!s && /fetch failed|ENOTFOUND|ECONN|timed? ?out/i.test(msg)) text = 'The server couldn\'t reach Claude. Click Read again.';
+  else text = 'The read failed. Click Read again.';
+  return `${text} (Details: ${s ? s + ' ' : ''}${msg.slice(0, 240)})`;
 }
 
 async function tick() {
