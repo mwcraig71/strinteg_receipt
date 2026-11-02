@@ -11,9 +11,11 @@ function authorized(req) {
   if (!config.inboundWebhookPassword) return false;
   const h = req.headers.authorization || '';
   if (!h.startsWith('Basic ')) return false;
-  const [u, p] = Buffer.from(h.slice(6), 'base64').toString().split(':');
+  const raw = Buffer.from(h.slice(6), 'base64').toString(); const i = raw.indexOf(':');
+  const dec = (x) => { try { return decodeURIComponent(x); } catch (e) { return x; } };
+  const u = dec(raw.slice(0, i)); const p = dec(raw.slice(i + 1)); // senders may percent-encode characters like ! in the URL
   const eq = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  return eq(u || '', config.inboundWebhookUser) && eq(p || '', config.inboundWebhookPassword);
+  return i > 0 && eq(u, config.inboundWebhookUser) && eq(p, config.inboundWebhookPassword.trim());
 }
 
 function htmlToText(html) {
