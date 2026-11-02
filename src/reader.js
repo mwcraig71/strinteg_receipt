@@ -124,7 +124,7 @@ async function read({ rec, images, plan, emailText, careful }) {
   const res = await create({
     model, max_tokens: 8000,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-    tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name },
+    tools: [TOOL], tool_choice: { type: 'auto' },
     messages: [{ role: 'user', content }],
   });
   return { raw: toolInput(res, TOOL.name), model, usage: res.usage, cost: costOf(model, res.usage) };
@@ -140,8 +140,8 @@ async function resort(rec) {
     model, max_tokens: 3000,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     tools: [{ name: 'record_categories', description: 'One entry per line, same order.', input_schema: { type: 'object', properties: { lines: { type: 'array', items: { type: 'object', properties: { category: { type: 'string' }, confidence: { type: 'number' }, reason: { type: 'string' } }, required: ['category', 'confidence'] } } }, required: ['lines'] } }],
-    tool_choice: { type: 'tool', name: 'record_categories' },
-    messages: [{ role: 'user', content: `Re-assign the expense type of each line of this already-transcribed receipt.\nPurpose: ${p[1]}. ${p[2]}\nProject number: ${rec.project || '(none)'}\nMerchant: ${rec.result.merchant} (${rec.result.receipt_type})\n\nLines:\n${lines}` }],
+    tool_choice: { type: 'auto' },
+    messages: [{ role: 'user', content: `Call the record_categories tool to re-assign the expense type of each line of this already-transcribed receipt.\nPurpose: ${p[1]}. ${p[2]}\nProject number: ${rec.project || '(none)'}\nMerchant: ${rec.result.merchant} (${rec.result.receipt_type})\n\nLines:\n${lines}` }],
   });
   return { cats: toolInput(res, 'record_categories')?.lines || [], cost: costOf(model, res.usage), model };
 }
