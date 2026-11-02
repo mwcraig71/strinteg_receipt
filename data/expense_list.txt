@@ -1,0 +1,67 @@
+Airfare (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Baggage Fees (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Hotel (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Hotel Tax (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Meals (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Gas (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Parking (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Taxi / Public Transportation (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Rental Car (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Rental Car Gas (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Tolls/Road Charges (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Mileage (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Miscellaneous Travel Expenses (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Field Supplies (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Equipment Rental (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+Postage (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+3062 Supplies	Costs for general supplies that are not used for a specific project. Includes expendables, inspection tools, etc. Use '3022 - Supplies - Computer' for computer supply costs.
+3021 Telephone	Employees are able to expense up to $100 of their own phone bill (excludes family members, etc.)
+3500.1 TRE - Lodging	Hotel costs incurred while traveling for training classes, conferences, etc.
+3500.2 TRE - Lodging Tax	Hotel costs incurred while traveling for training classes, conferences, etc.
+3505 TRE - Meals	Meal costs incurred while traveling for training classes, conferences, etc.
+3510 TRE - Airfare	Airfare costs (including baggage fees) incurred while traveling for training classes, conferences, etc.
+3515 TRE - Rental Car Expenses	Rental car costs incurred while traveling for training classes, conferences, etc.
+3518 TRE - Mileage	Personal vehicle mileage costs incurred while traveling for training classes, conferences, etc.
+3520 TRE - Other Transportation	Costs incurred while traveling for training classes, conferences, etc.
+3525 TRE - Professional Fees - Allowable	Registration costs associated with training classes, conferences, etc.
+3022 Supplies - Computer	Non-project computer supply costs. Use '3062 - Supplies' for non-computer supply costs.
+3131 Employee Professional Registration	Costs incurred for professional registrations, licenses, etc. Do not use for training-related costs.
+7000 Accounting Department to Update	Use for any costs incurred for which you do not know what account to charge to. USE THIS ACCOUNT FOR ALCOHOL.
+1150 Consultant Fees	
+Railroad Fees (Direct)	Direct costs incurred for PROJECTS. (Excludes business development, training, etc.)
+★ 3010.1 Office Lodging	Rarely used. Typically for internal management travel, etc.
+★ 3010.2 Office Lodging Tax	Rarely used. Typically for internal management travel, etc.
+★ 3011 Office Meals	Rarely used. Typically for internal management travel, etc.
+★ 3012 Office Airfare	Rarely used. Typically for internal management travel, etc.
+★ 3013 Office Rental Car Expenses	Rarely used. Typically for internal management travel, etc.
+★ 3014 Office Other Transportation	Rarely used. Typically for internal management travel, etc.
+★ 3020 Mailing and Shipping / Office Relocations	Costs incurred shipping for non-project purposes.
+★ 3043 Office Rent	Typically used only by accounting.
+★ 3044 Office Rent - Parking	Rarely used. Parking fees associated with Strinteg Offices.
+★ 3045 Utilities	Typically used only by accounting.
+★ 3060 Supplies and Printing	Printing related costs.
+★ 3061 Supplies - Drafting	Drafting related costs.
+★ 3300.1 BSD - Lodging	Rarely used. Requires management approval before costs incurred.
+★ 3300.2 BSD - Lodging Tax	Rarely used. Requires management approval before costs incurred.
+★ 3305 BSD - Meals	Rarely used. Requires management approval before costs incurred.
+★ 3315 BSD - Rental Car Expenses	Rarely used. Requires management approval before costs incurred.
+★ 3320 BSD - Other Transportation	Rarely used. Requires management approval before costs incurred.
+★ 3325 BSD - Entertainment	Rarely used. Requires management approval before costs incurred.
+★ 3330 BSD - Mailing & Shipping	Rarely used. Requires management approval before costs incurred.
+★ 3335 BSD - Supplies & Printing	Rarely used. Requires management approval before costs incurred.
+★ 3340 BSD - Professional Fees - Allowable	Rarely used. Requires management approval before costs incurred.
+★ 3345 BSD - Professional Fees - Unallowable	Rarely used. Requires management approval before costs incurred.
+★ 3200.1 M - Lodging	Rarely used. Requires management approval before costs incurred.
+★ 3200.2 M - Lodging Tax	Rarely used. Requires management approval before costs incurred.
+★ 3205 M - Meals	Rarely used. Requires management approval before costs incurred.
+★ 3210 M - Airfare	Rarely used. Requires management approval before costs incurred.
+★ 3215 M - Rental Car Expenses	Rarely used. Requires management approval before costs incurred.
+★ 3220 M - Other Transportation	Rarely used. Requires management approval before costs incurred.
+★ 3225 M - Entertainment	Rarely used. Requires management approval before costs incurred.
+★ 3230 M - Mailing & Shipping	Rarely used. Requires management approval before costs incurred.
+★ 3235 M - Supplies & Printing	Rarely used. Requires management approval before costs incurred.
+★ 3240 M - Professional Fees	Rarely used. Requires management approval before costs incurred.
+★ 3245 M - Advertising / Promotion	Rarely used. Requires management approval before costs incurred.
+★ 3042 Office Cleaning / Maintenance	
+★ 3026 Computer Software and Support	
+★ 3015 Vehicle Fleet	Costs associated with maintenance of vehicles. Use '7000 - Accounting Department to Update' for any outfitting/upgrade costs in excess of $2,500.

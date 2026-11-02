@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Strinteg Receipt Sorter</title>
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Open+Sans:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/app.css">
+<script>window.APP = { devMode: __DEV_MODE__, clerkPk: "__CLERK_PK__", clerkFapi: "__CLERK_FAPI__" };</script>
+</head>
+<body>
+<div class="band"><div class="wrap">
+  <img src="/logo-invert.png" alt="Strinteg" class="logo">
+  <h1>Receipt Sorter</h1>
+  <div class="spacer"></div>
+  <button class="btn sm bandbtn" id="mailBtn" type="button" hidden>Email receipts in</button>
+  <div id="userBtn"></div>
+</div></div>
+
+<div id="signin" class="signin" hidden>
+  <div class="signin-copy">
+    <h2>Sign in to file receipts</h2>
+    <p>Upload or email your receipts. Each one is read automatically, sorted into Strinteg expense types and vendors, and checked against its own totals.</p>
+  </div>
+  <div id="signinMount"></div>
+</div>
+
+<div id="app" hidden>
+  <div class="bar"><div class="wrap">
+    <div class="field">
+      <label for="from">From</label>
+      <input type="date" id="from">
+    </div>
+    <div class="field">
+      <label for="to">To</label>
+      <input type="date" id="to">
+    </div>
+    <div class="presets">
+      <button class="btn sm ghost" data-preset="this" type="button">This month</button>
+      <button class="btn sm ghost" data-preset="last" type="button">Last month</button>
+      <button class="btn sm ghost" data-preset="30" type="button">Last 30 days</button>
+    </div>
+    <div class="grow"></div>
+    <div class="field">
+      <label for="purpose">New receipts: purpose</label>
+      <select id="purpose"></select>
+    </div>
+    <div class="field">
+      <label for="project">Project #</label>
+      <input type="text" id="project" placeholder="e.g. 24-117" size="10">
+    </div>
+  </div></div>
+
+  <main class="wrap">
+    <section class="panel" id="queuePanel">
+      <header><h2>Receipts <span id="qCount"></span></h2>
+        <select id="statusFilter" aria-label="Show">
+          <option value="">All</option><option value="todo">To check</option><option value="checked">Checked</option><option value="submitted">Submitted</option>
+        </select>
+      </header>
+      <div class="qfoot">
+        <div class="drop" id="drop" tabindex="0" role="button"><strong>Add receipts</strong>Drop scans or photos here, or click. PDF, JPEG, PNG, HEIC.</div>
+        <input type="file" id="fileIn" accept="application/pdf,image/*,.pdf,.heic,.heif" multiple hidden>
+        <label class="toggle"><input type="checkbox" id="splitPages" checked> Each PDF page is its own receipt</label>
+      </div>
+      <ul id="queue"></ul>
+    </section>
+
+    <section class="panel" id="viewPanel">
+      <header>
+        <h2>Scan</h2>
+        <div class="tools">
+          <button class="btn sm" id="rotL" type="button" title="Rotate left">⟲ Rotate</button>
+          <button class="btn sm" id="rotR" type="button" title="Rotate right">Rotate ⟳</button>
+          <button class="btn sm" id="cropBtn" type="button">Crop</button>
+          <button class="btn sm ghost" id="cropReset" type="button" hidden>Undo crop</button>
+          <button class="btn sm" id="zoomBtn" type="button">Zoom</button>
+        </div>
+      </header>
+      <div class="viewer" id="viewer"><div class="stage" id="stage"></div></div>
+      <div class="vfoot">
+        <div class="opts">
+          <label class="toggle"><input type="checkbox" id="optEnhance"> Clean up contrast</label>
+          <label class="toggle"><input type="checkbox" id="optBoost"> Darken faded print</label>
+          <label class="toggle"><input type="checkbox" id="optTrim"> Trim blank margins</label>
+        </div>
+        <span id="tileInfo" class="num"></span>
+      </div>
+    </section>
+
+    <section class="panel" id="resPanel">
+      <header>
+        <h2>What was read</h2>
+        <div class="actions" id="resActions"></div>
+      </header>
+      <div id="res"></div>
+    </section>
+  </main>
+
+  <section class="submit"><div class="wrap">
+    <div class="sub-head">
+      <h2>Submit <span id="periodLabel"></span></h2>
+      <div id="periodStat" class="periodstat"></div>
+    </div>
+    <div class="sub-body">
+      <div class="actions">
+        <button class="btn" id="previewBtn" type="button">Download without submitting</button>
+        <button class="btn primary" id="submitBtn" type="button">Submit</button>
+      </div>
+      <div id="confirmBox" class="confirm" hidden></div>
+      <div>
+        <div class="lbl">Past submissions</div>
+        <ul id="subs" class="subs"></ul>
+      </div>
+    </div>
+  </div></section>
+</div>
+
+<dialog id="mailDlg">
+  <header><h2>Email receipts in</h2><button class="btn ghost sm" id="mailClose" type="button">Close</button></header>
+  <div class="body">
+    <div id="mailBody"></div>
+    <div><div class="lbl">Recent emails</div><ul class="subs" id="mailLog"></ul></div>
+  </div>
+</dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script src="/logic.js"></script>
+<script>
+  if (!APP.devMode && APP.clerkFapi) {
+    const add = (src, extra) => { const s = document.createElement('script'); s.src = src; s.crossOrigin = 'anonymous'; s.async = false; Object.assign(s.dataset, extra || {}); document.head.appendChild(s); return s; };
+    add(`https://${APP.clerkFapi}/npm/@clerk/ui@1/dist/ui.browser.js`);
+    add(`https://${APP.clerkFapi}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`, { clerkPublishableKey: APP.clerkPk });
+  }
+</script>
+<script src="/app.js" defer></script>
+</body>
+</html>
