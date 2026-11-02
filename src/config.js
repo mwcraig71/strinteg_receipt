@@ -22,7 +22,7 @@ module.exports = {
   readConcurrency: Number(env.READ_CONCURRENCY || 2),
 
   // Postmark inbound: the server address Postmark gives you, e.g. 1a2b3c@inbound.postmarkapp.com
-  inboundAddress: env.INBOUND_ADDRESS || '',
+  inboundAddress: env.INBOUND_ADDRESS || '3d6786afd526563d6f6a76b263bef72a@inbound.postmarkapp.com',
   // Shared secret Postmark sends as basic-auth on the webhook URL.
   inboundWebhookUser: env.INBOUND_WEBHOOK_USER || 'postmark',
   inboundWebhookPassword: env.INBOUND_WEBHOOK_PASSWORD || '',

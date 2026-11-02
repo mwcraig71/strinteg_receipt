@@ -65,6 +65,15 @@
         <div class="drop" id="drop" tabindex="0" role="button"><strong>Add receipts</strong>Drop scans or photos here, or click. PDF, JPEG, PNG, HEIC.</div>
         <input type="file" id="fileIn" accept="application/pdf,image/*,.pdf,.heic,.heif" multiple hidden>
         <label class="toggle"><input type="checkbox" id="splitPages" checked> Each PDF page is its own receipt</label>
+        <div class="mailin" id="mailIn" hidden>
+          <div class="lbl">Or email receipts to</div>
+          <div class="mailaddr"><code id="mailMine"></code><button class="btn sm" data-copy="mailMine" type="button">Copy</button></div>
+          <div class="note">Your personal address works from any email account. Attach photos or PDFs, or forward e-receipts.</div>
+          <details class="note"><summary>Sending from your sign-in email?</summary>
+            <div class="mailaddr"><code id="mailPlain"></code><button class="btn sm" data-copy="mailPlain" type="button">Copy</button></div>
+            Mail from <b id="mailFrom"></b> to this shorter address also reaches you.
+          </details>
+        </div>
       </div>
       <div class="bulk" id="bulk">
         <label class="toggle"><input type="checkbox" id="pickAll"> Select all</label>

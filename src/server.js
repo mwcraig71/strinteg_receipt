@@ -91,7 +91,7 @@ const pub = (r) => ({
 
 api.get('/me', async (req, res) => {
   res.json({ user: { email: req.user.email, name: req.user.name }, settings: req.user.settings, inboundAddress: inbound.addressFor(req.user),
-    inboundConfigured: !!config.inboundAddress, reader: config.reader, purposes: lists.PURPOSES, lists: { exp: lists.EXP_TXT, ven: lists.VEN_TXT } });
+    inboundConfigured: !!config.inboundAddress, inboundPlain: config.inboundAddress, reader: config.reader, purposes: lists.PURPOSES, lists: { exp: lists.EXP_TXT, ven: lists.VEN_TXT } });
 });
 api.patch('/me/settings', async (req, res) => {
   const s = { ...req.user.settings };

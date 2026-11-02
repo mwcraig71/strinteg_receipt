@@ -50,6 +50,10 @@ async function start() {
   $('#purpose').value = st.purpose || 'project'; $('#project').value = st.project || ''; $('#splitPages').checked = st.splitPages !== false;
   let saved = null; try { saved = JSON.parse(localStorage.getItem('rs.range') || 'null'); } catch (e) {}
   if (saved?.from && saved?.to) { $('#from').value = saved.from; $('#to').value = saved.to; } else preset('this', false);
+  if (S.me.inboundAddress) {
+    $('#mailMine').textContent = S.me.inboundAddress; $('#mailPlain').textContent = S.me.inboundPlain || '';
+    $('#mailFrom').textContent = S.me.user.email || 'your sign-in email'; $('#mailIn').hidden = false;
+  }
   $('#app').hidden = false; $('#mailBtn').hidden = false;
   await Promise.all([loadReceipts(), loadPeriod(), loadSubs()]);
   if (!S.active && S.receipts[0]) select(S.receipts[0].id);
@@ -490,6 +494,11 @@ $('#subs').addEventListener('click', async (e) => {
   }
 });
 $('#mailBtn').onclick = openMail;
+$('#mailIn').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  try { await navigator.clipboard.writeText($('#' + b.dataset.copy).textContent); toast('Address copied'); }
+  catch (err) { const r = document.createRange(); r.selectNodeContents($('#' + b.dataset.copy)); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Address selected. Press Ctrl+C to copy.'); }
+});
 $('#mailClose').onclick = () => $('#mailDlg').close();
 $('#mailDlg').addEventListener('click', async (e) => { if (e.target.id === 'copyAddr') { try { await navigator.clipboard.writeText($('#addrText').textContent); toast('Address copied'); } catch (err) { toast('Select the address and copy it.'); } } });
 addEventListener('beforeunload', () => { const r = activeR(); if (r?._pending) flush(r); });
