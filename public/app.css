@@ -55,6 +55,12 @@ input:hover,select:hover,textarea:hover{border-color:var(--faint)}
 .btn.ghost:hover{color:var(--ink);border-color:var(--line)}
 .btn.sm{padding:4px 8px;font-size:12px}
 .btn:disabled{opacity:.4;cursor:default}
+.btn.danger{color:var(--bad);border-color:var(--bad);background:var(--surface)}
+.btn.danger:hover{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.bulk{display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--line);min-height:38px}
+.pick{position:absolute;left:8px;top:8px;z-index:1;accent-color:var(--orange);width:16px;height:16px;margin:0}
+#queue li{padding-left:30px}
 .btn.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 
 main.wrap{display:grid;grid-template-columns:250px minmax(0,1fr) minmax(0,1.15fr);gap:16px;padding-block:16px;align-items:start}

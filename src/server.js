@@ -184,6 +184,15 @@ api.delete('/receipts/:id', async (req, res) => {
   await db.q('DELETE FROM receipts WHERE id=$1', [r.id]); await storage.remove(r.file_key).catch(() => {});
   res.json({ ok: true });
 });
+api.post('/receipts/delete', async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((x) => typeof x === 'string').slice(0, 500) : [];
+  if (!ids.length) return res.status(400).json({ error: 'Pick at least one receipt.' });
+  const rows = await db.q(`SELECT id, file_key, status FROM receipts WHERE user_id=$1 AND id::text = ANY($2::text[])`, [req.user.id, ids]);
+  const ok = rows.filter((r) => !LOCKED.has(r.status));
+  if (ok.length) await db.q(`DELETE FROM receipts WHERE user_id=$1 AND id = ANY($2::uuid[])`, [req.user.id, ok.map((r) => r.id)]);
+  await Promise.all(ok.map((r) => storage.remove(r.file_key).catch(() => {})));
+  res.json({ deleted: ok.map((r) => r.id), locked: rows.length - ok.length });
+});
 api.get('/receipts/:id/image', async (req, res) => {
   const r = await own(req, res); if (!r) return;
   if (r.mime.startsWith('text/')) return res.type('text/plain; charset=utf-8').send(await storage.get(r.file_key));

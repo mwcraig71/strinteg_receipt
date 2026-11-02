@@ -4,7 +4,7 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const { money, num, r2, SPREAD } = ReceiptLogic;
 let L = null; let EXP = []; let VEN = [];
-const S = { me: null, receipts: [], active: null, filter: '', zoom: false, cropMode: false, pendingCrop: null, img: null, started: false, stale: {} };
+const S = { picked: new Set(), me: null, receipts: [], active: null, filter: '', zoom: false, cropMode: false, pendingCrop: null, img: null, started: false, stale: {} };
 
 function toast(msg, ms = 4500) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), ms); }
 const activeR = () => S.receipts.find((r) => r.id === S.active) || null;
@@ -104,13 +104,32 @@ function renderQueue() {
   $('#queue').innerHTML = list.map((r, i) => {
     const [cls, txt] = statusOf(r); const prev = list[i - 1];
     const canJoin = prev && !r.mime.startsWith('text/') && !prev.mime.startsWith('text/') && r.status !== 'submitted' && prev.status !== 'submitted';
-    return `<li data-id="${r.id}" class="${r.id === S.active ? 'active' : ''}">
+    const pick = r.status === 'submitted' ? '' : `<input type="checkbox" class="pick" data-pick="${r.id}" aria-label="Select ${esc(r.vendor || r.name)}"${S.picked.has(r.id) ? ' checked' : ''}>`;
+    return `<li data-id="${r.id}" class="${r.id === S.active ? 'active' : ''}">${pick}
       ${r.mime.startsWith('text/') ? '<div class="th txt">EMAIL</div>' : `<img class="th" data-thumb="${r.id}" alt="">`}
       <div style="min-width:0"><div class="nm" title="${esc(r.name)}">${esc(r.vendor || r.result?.merchant || r.name)}</div>
       <div class="meta"><span class="chip ${cls}">${txt}</span>${r.total != null ? `<span class="num">${money(r.total)}</span>` : ''}${r.date ? `<span>${esc(fmtDate(r.date))}</span>` : ''}${r.source === 'email' ? '<span>· emailed</span>' : ''}</div>
-      ${r.status !== 'submitted' ? `<div class="meta">${canJoin ? `<button class="btn ghost sm" data-join="${r.id}" data-into="${prev.id}" type="button" title="Combine with the receipt above (multi-page folio)">Join above</button>` : ''}<button class="btn ghost sm" data-del="${r.id}" type="button">Remove</button></div>` : ''}</div></li>`;
+      ${r.status !== 'submitted' ? `<div class="meta">${canJoin ? `<button class="btn ghost sm" data-join="${r.id}" data-into="${prev.id}" type="button" title="Combine with the receipt above (multi-page folio)">Join above</button>` : ''}<button class="btn ghost sm" data-del="${r.id}" type="button">Delete</button></div>` : ''}</div></li>`;
   }).join('') || `<li class="empty">${S.receipts.length ? 'Nothing matches this filter.' : 'No receipts dated in this range yet. Add some above, or email them in.'}</li>`;
+  renderBulk();
   loadThumbs();
+}
+function renderBulk() {
+  const ids = new Set(S.receipts.map((r) => r.id)); for (const id of [...S.picked]) if (!ids.has(id)) S.picked.delete(id);
+  const pickable = visible().filter((r) => r.status !== 'submitted');
+  const n = S.picked.size;
+  $('#bulk').hidden = !pickable.length;
+  $('#pickAll').checked = n > 0 && pickable.every((r) => S.picked.has(r.id));
+  $('#pickAll').indeterminate = n > 0 && !$('#pickAll').checked;
+  const b = $('#bulkDelete'); b.hidden = !n;
+  if (!b.classList.contains('armed')) b.textContent = `Delete ${n} selected`;
+}
+/* Two clicks to delete: the first arms the button, the second does it. */
+function armed(btn, label) {
+  if (btn.classList.contains('armed')) { clearTimeout(btn._t); btn.classList.remove('armed'); return true; }
+  btn._old = btn.textContent; btn.textContent = label; btn.classList.add('armed');
+  btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = btn._old; }, 4000);
+  return false;
 }
 const thumbCache = new Map();
 async function loadThumbs() {
@@ -227,7 +246,7 @@ function renderResult() {
     <div class="sumrow"><div class="actions">${locked ? '' : '<button class="btn sm" data-act="addline" type="button">Add line</button><button class="btn sm" data-act="resort" type="button">Re-sort for this purpose</button>'}</div>
       <span class="note">${r.model === 'manual' ? 'Entered by hand' : `Read by ${esc(r.model || 'Claude')}`}${r.cost ? ` · ${money(r.cost)} of Claude usage` : ''} · quality: ${esc(R.read_quality)}</span></div>
     <div><div class="lbl" style="margin-bottom:6px">Totals by expense type</div><div class="cattot num" id="cattot">${catTotHtml(R)}</div></div>
-    ${locked ? '' : `<div class="actions"><button class="btn ghost sm" data-act="delete" type="button">Remove this receipt</button></div>`}
+    ${locked ? '' : `<div class="actions"><button class="btn sm danger" data-act="delete" type="button">Delete this receipt</button></div>`}
   </div>`;
 }
 function refreshLive() {
@@ -270,7 +289,7 @@ function onEdit(e) {
   refreshLive();
 }
 
-async function action(act, r) {
+async function action(act, r, btnEl) {
   try {
     if (act === 'read' || act === 'careful') {
       await flush(r); delete S.stale[r.id];
@@ -292,16 +311,29 @@ async function action(act, r) {
       Object.assign(r, await (await call(`/receipts/${r.id}/resort`, { json: {} })).json()); renderResult(); renderQueue();
       toast('Expense types updated for ' + (S.me.purposes.find((p) => p[0] === r.purpose) || [])[1]?.toLowerCase());
     } else if (act === 'delete') {
+      if (!armed(btnEl, 'Click again to delete')) return;
       await removeReceipt(r.id);
     }
   } catch (e) { toast(e.message); }
 }
 async function removeReceipt(id) {
   await call(`/receipts/${id}`, { method: 'DELETE' });
-  const i = visible().findIndex((x) => x.id === id);
-  S.receipts = S.receipts.filter((x) => x.id !== id);
-  if (S.active === id) { const v = visible(); S.active = (v[i] || v[i - 1])?.id || null; loadImage(); renderResult(); }
-  renderQueue(); loadPeriod(); toast('Receipt removed');
+  dropLocal([id]); toast('Receipt deleted');
+}
+function dropLocal(ids) {
+  const gone = new Set(ids); const v0 = visible(); const i = v0.findIndex((x) => x.id === S.active);
+  S.receipts = S.receipts.filter((x) => !gone.has(x.id)); ids.forEach((id) => { S.picked.delete(id); thumbCache.delete(id); });
+  if (gone.has(S.active)) { const v = visible(); S.active = (v[i] || v[i - 1] || v[0])?.id || null; loadImage(); renderResult(); }
+  renderQueue(); loadPeriod();
+}
+async function deletePicked(btn) {
+  const ids = [...S.picked]; if (!ids.length) return;
+  if (!armed(btn, `Click again to delete ${ids.length}`)) return;
+  try {
+    const out = await (await call('/receipts/delete', { json: { ids } })).json();
+    dropLocal(out.deleted);
+    toast(`Deleted ${out.deleted.length} receipt${out.deleted.length === 1 ? '' : 's'}${out.locked ? `. ${out.locked} submitted receipt${out.locked === 1 ? ' was' : 's were'} kept` : ''}.`);
+  } catch (e) { toast(e.message); }
 }
 
 /* ---------- uploads ---------- */
@@ -388,7 +420,9 @@ $('#from').addEventListener('change', rangeChanged); $('#to').addEventListener('
 document.querySelector('.presets').addEventListener('click', (e) => { const b = e.target.closest('[data-preset]'); if (b) preset(b.dataset.preset); });
 const saveSettings = () => call('/me/settings', { method: 'PATCH', json: { purpose: $('#purpose').value, project: $('#project').value, splitPages: $('#splitPages').checked } }).catch((e) => toast(e.message));
 ['#purpose', '#project', '#splitPages'].forEach((s) => $(s).addEventListener('change', saveSettings));
-$('#statusFilter').addEventListener('change', (e) => { S.filter = e.target.value; renderQueue(); });
+$('#statusFilter').addEventListener('change', (e) => { S.filter = e.target.value; S.picked.clear(); renderQueue(); });
+$('#pickAll').addEventListener('change', (e) => { const p = visible().filter((r) => r.status !== 'submitted'); if (e.target.checked) p.forEach((r) => S.picked.add(r.id)); else S.picked.clear(); renderQueue(); });
+$('#bulkDelete').addEventListener('click', (e) => deletePicked(e.currentTarget));
 
 $('#drop').onclick = () => $('#fileIn').click();
 $('#drop').onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileIn').click(); } };
@@ -402,7 +436,9 @@ addEventListener('paste', (e) => { const fs = [...(e.clipboardData?.files || [])
 
 $('#queue').addEventListener('click', async (e) => {
   const del = e.target.closest('[data-del]'); const jn = e.target.closest('[data-join]'); const li = e.target.closest('li[data-id]');
-  if (del) { try { await removeReceipt(del.dataset.del); } catch (err) { toast(err.message); } return; }
+  const pk = e.target.closest('[data-pick]');
+  if (pk) { if (pk.checked) S.picked.add(pk.dataset.pick); else S.picked.delete(pk.dataset.pick); renderBulk(); return; }
+  if (del) { if (!armed(del, 'Confirm delete')) return; try { await removeReceipt(del.dataset.del); } catch (err) { toast(err.message); } return; }
   if (jn) {
     try { const upd = await (await call(`/receipts/${jn.dataset.into}/join`, { json: { with: jn.dataset.join } })).json(); thumbCache.delete(upd.id); toast('Joined into one receipt. Reading it again.'); await loadReceipts(); select(upd.id); }
     catch (err) { toast(err.message); }
@@ -431,10 +467,10 @@ $('#stage').addEventListener('pointerdown', (e) => {
 });
 $('#stage').addEventListener('click', (e) => { if (!S.cropMode && e.target.tagName === 'IMG') { S.zoom = !S.zoom; renderViewer(); } });
 
-$('#resActions').addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); const r = activeR(); if (b && r) action(b.dataset.act, r); });
+$('#resActions').addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); const r = activeR(); if (b && r) action(b.dataset.act, r, b); });
 $('#res').addEventListener('click', (e) => {
   const r = activeR(); if (!r) return;
-  const b = e.target.closest('[data-act]'); if (b) return action(b.dataset.act, r);
+  const b = e.target.closest('[data-act]'); if (b) return action(b.dataset.act, r, b);
   const dl = e.target.closest('[data-dl]'); if (dl && r.result) { r.result.lines.splice(+dl.dataset.dl, 1); scheduleSave(r, { result: true }); renderResult(); }
 });
 $('#res').addEventListener('input', onEdit); $('#res').addEventListener('change', onEdit);
